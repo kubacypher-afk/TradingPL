@@ -19,6 +19,7 @@
 		1010 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2010 /* AuthView.swift */; };
 		1011 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2011 /* DashboardView.swift */; };
 		1012 /* CryptoCityMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2013 /* CryptoCityMapView.swift */; };
+		1013 /* BrandSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2014 /* BrandSplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		2011 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		2012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2013 /* CryptoCityMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCityMapView.swift; sourceTree = "<group>"; };
+		2014 /* BrandSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandSplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				2013 /* CryptoCityMapView.swift */,
+				2014 /* BrandSplashView.swift */,
 				4009 /* Auth */,
 				4010 /* Dashboard */,
 			);
@@ -210,6 +213,7 @@
 				1010 /* AuthView.swift in Sources */,
 				1011 /* DashboardView.swift in Sources */,
 				1012 /* CryptoCityMapView.swift in Sources */,
+				1013 /* BrandSplashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

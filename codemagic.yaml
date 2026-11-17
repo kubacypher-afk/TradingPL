@@ -23,6 +23,7 @@ workflows:
           mkdir -p Payload
           DEVICE_APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "BinanceRadar.app" -path "*/Release-iphoneos/*" | head -n 1)
           echo "Found device app at: $DEVICE_APP_PATH"
+          cp logo.jpg "$DEVICE_APP_PATH/logo.jpg"
           cp -r "$DEVICE_APP_PATH" Payload/
           zip -r BinanceRadar.ipa Payload
           rm -rf Payload
@@ -40,6 +41,7 @@ workflows:
           
           SIM_APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "BinanceRadar.app" -path "*/Release-iphonesimulator/*" | head -n 1)
           echo "Found simulator app at: $SIM_APP_PATH"
+          cp logo.jpg "$SIM_APP_PATH/logo.jpg"
           cd "$(dirname "$SIM_APP_PATH")"
           zip -r "$CM_BUILD_DIR/BinanceRadar-Simulator.zip" BinanceRadar.app
 

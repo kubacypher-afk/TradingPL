@@ -12,18 +12,22 @@ struct AuthView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // MARK: - Top Header (Binance Status & Logo)
-                HStack(spacing: 12) {
-                    BinanceDiamondLogo(size: 28, color: .binanceYellow)
+                // MARK: - Top Header (TradingPL & Binance Status)
+                HStack(spacing: 10) {
+                    TradingPLLogoView(size: 32, showGlow: false)
                     
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 4) {
-                            Text("BINANCE")
-                                .font(.system(size: 15, weight: .black, design: .rounded))
+                            Text("TradingPL")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
                                 .foregroundColor(.binanceTextPrimary)
-                            Text("RADAR")
-                                .font(.system(size: 15, weight: .black, design: .rounded))
-                                .foregroundColor(.binanceYellow)
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .black, design: .monospaced))
+                                .foregroundColor(Color(hex: "#FF7A00"))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color(hex: "#FF7A00").opacity(0.15))
+                                .cornerRadius(4)
                         }
                         
                         HStack(spacing: 4) {
