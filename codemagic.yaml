@@ -1,0 +1,27 @@
+workflows:
+  build-unsigned-ios:
+    name: Build Binance Radar .IPA
+    max_build_duration: 15
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - push
+    scripts:
+      - name: Build iOS App (Archive)
+        script: |
+          xcodebuild build \
+            -project "BinanceRadar.xcodeproj" \
+            -scheme "BinanceRadar" \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package into unsigned .ipa
+        script: |
+          mkdir Payload
+          cp -r $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Release-iphoneos/*.app Payload/
+          zip -r BinanceRadar.ipa Payload
+          rm -rf Payload
+    artifacts:
+      - BinanceRadar.ipa
