@@ -195,7 +195,7 @@ struct CryptoCityMapView: View {
                         
                         // Skip / Pomiń Button
                         Button(action: {
-                            HapticsManager.shared.light()
+                            HapticsManager.shared.lightImpact()
                             finishIntro()
                         }) {
                             Text("Pomiń")
@@ -258,36 +258,38 @@ struct CryptoCityMapView: View {
         
         // Step 2: Sequentially drop crypto pins on the map
         for (index, node) in nodes.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35 + Double(index) * 0.16) {
+            let delaySeconds = 0.35 + (Double(index) * 0.16)
+            let symbolKey = node.symbol
+            DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
-                    _ = visibleNodes.insert(node.symbol)
+                    _ = self.visibleNodes.insert(symbolKey)
                 }
-                HapticsManager.shared.light()
+                HapticsManager.shared.lightImpact()
             }
         }
         
         // Step 3: Draw interconnecting liquidity lasers
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            statusText = "SYNCHRONIZACJA WĘZŁÓW..."
-            HapticsManager.shared.medium()
+            self.statusText = "SYNCHRONIZACJA WĘZŁÓW..."
+            HapticsManager.shared.mediumImpact()
             
             withAnimation(.easeInOut(duration: 1.2)) {
-                lineProgress = 1.0
+                self.lineProgress = 1.0
             }
         }
         
         // Step 4: Full Convergence into Binance Diamond Core
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.1) {
-            statusText = "AUTORYZACJA TERMINALA..."
-            HapticsManager.shared.rigid()
+            self.statusText = "AUTORYZACJA TERMINALA..."
+            HapticsManager.shared.rigidImpact()
             
             withAnimation(.spring(response: 0.65, dampingFraction: 0.72)) {
-                isConverging = true
+                self.isConverging = true
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                shockwave = true
-                HapticsManager.shared.success()
+                self.shockwave = true
+                HapticsManager.shared.notifySuccess()
             }
         }
         
