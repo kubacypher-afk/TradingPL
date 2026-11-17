@@ -8,15 +8,14 @@ on:
 jobs:
   build-ipa:
     name: Build Binance Radar .IPA
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Pobierz kod źródłowy
         uses: actions/checkout@v4
 
-      - name: Ustawienie wersji Xcode
+      - name: Sprawdź wersję Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app
           xcodebuild -version
 
       - name: Kompilacja projektu Xcode (Archive)
