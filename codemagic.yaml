@@ -18,10 +18,12 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Package into unsigned .ipa (for Sideloadly & iPhone)
+      - name: Package into unsigned .ipa (for Sideloadly & Physical iPhone)
         script: |
-          mkdir Payload
-          cp -r $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Release-iphoneos/*.app Payload/
+          mkdir -p Payload
+          DEVICE_APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "BinanceRadar.app" -path "*/Release-iphoneos/*" | head -n 1)
+          echo "Found device app at: $DEVICE_APP_PATH"
+          cp -r "$DEVICE_APP_PATH" Payload/
           zip -r BinanceRadar.ipa Payload
           rm -rf Payload
 
@@ -36,8 +38,10 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
           
-          cd $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Release-iphonesimulator
-          zip -r $CM_BUILD_DIR/BinanceRadar-Simulator.zip BinanceRadar.app
+          SIM_APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "BinanceRadar.app" -path "*/Release-iphonesimulator/*" | head -n 1)
+          echo "Found simulator app at: $SIM_APP_PATH"
+          cd "$(dirname "$SIM_APP_PATH")"
+          zip -r "$CM_BUILD_DIR/BinanceRadar-Simulator.zip" BinanceRadar.app
 
     artifacts:
       - BinanceRadar.ipa

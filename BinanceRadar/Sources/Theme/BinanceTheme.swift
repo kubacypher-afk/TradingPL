@@ -18,6 +18,9 @@ extension Color {
     static let binanceTextPrimary = Color(hex: "EAECEF")
     static let binanceTextSecondary = Color(hex: "848E9C")
     static let binanceTextMuted = Color(hex: "5E6673")
+    static let binanceSubtext = Color(hex: "848E9C")
+    static let binanceLine = Color(hex: "2E333D")
+    static let binanceGold = Color(hex: "F0B90B")
     
     // Trading Signals
     static let binanceGreen = Color(hex: "0ECB81")
