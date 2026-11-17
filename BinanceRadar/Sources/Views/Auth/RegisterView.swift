@@ -127,7 +127,7 @@ struct RegisterView: View {
                 }
             }) {
                 HStack(spacing: 10) {
-                    if viewModel.isAuthenticating {
+                    if viewModel.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .binanceBg))
                             .scaleEffect(0.9)
@@ -158,7 +158,7 @@ struct RegisterView: View {
                 .cornerRadius(12)
                 .shadow(color: Color.binanceYellow.opacity(0.35), radius: 10, x: 0, y: 4)
             }
-            .disabled(viewModel.isAuthenticating)
+            .disabled(viewModel.isLoading)
             .buttonStyle(ScaleButtonStyle())
             .padding(.top, 4)
         }

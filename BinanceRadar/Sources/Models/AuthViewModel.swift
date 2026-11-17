@@ -26,6 +26,7 @@ final class AuthViewModel: ObservableObject {
     
     // State Flags
     @Published var isLoading: Bool = false
+    var isAuthenticating: Bool { isLoading }
     @Published var errorMessage: String? = nil
     @Published var successBannerMessage: String? = nil
     @Published var isAuthenticated: Bool = false
@@ -159,6 +160,10 @@ final class AuthViewModel: ObservableObject {
         } else {
             showError("Nieprawidłowy numer telefonu lub hasło.")
         }
+    }
+    
+    func loginWithCredentials() {
+        loginWithPassword()
     }
     
     // MARK: - 120 FPS Landing Animation into Main Dashboard
