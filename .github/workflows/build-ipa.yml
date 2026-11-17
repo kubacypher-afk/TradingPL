@@ -1,0 +1,45 @@
+name: Kompilacja iOS IPA (Binance Radar Swift)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    name: Build Binance Radar .IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Pobierz kod źródłowy
+        uses: actions/checkout@v4
+
+      - name: Ustawienie wersji Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: Kompilacja projektu Xcode (Archive)
+        run: |
+          xcodebuild -project BinanceRadar.xcodeproj \
+            -scheme BinanceRadar \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/BinanceRadar.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Spakowanie do pliku .IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/BinanceRadar.xcarchive/Products/Applications/BinanceRadar.app Payload/
+          zip -r BinanceRadar.ipa Payload
+          ls -la BinanceRadar.ipa
+
+      - name: Udostępnij gotowy plik .IPA (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BinanceRadar-iOS-IPA
+          path: BinanceRadar.ipa
+          retention-days: 14

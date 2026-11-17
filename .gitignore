@@ -1,0 +1,9 @@
+build/
+*.ipa
+Payload/
+*.xcuserstate
+project.xcworkspace
+xcuserdata/
+DerivedData/
+.DS_Store
+Thumbs.db

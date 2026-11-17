@@ -1,0 +1,336 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1001 /* BinanceRadarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2001 /* BinanceRadarApp.swift */; };
+		1002 /* BinanceTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2002 /* BinanceTheme.swift */; };
+		1003 /* BinanceDiamondLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2003 /* BinanceDiamondLogo.swift */; };
+		1004 /* HapticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2004 /* HapticsManager.swift */; };
+		1005 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2005 /* BiometricAuthService.swift */; };
+		1006 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2006 /* AuthViewModel.swift */; };
+		1007 /* BinanceInputField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2007 /* BinanceInputField.swift */; };
+		1008 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2008 /* RegisterView.swift */; };
+		1009 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2009 /* LoginView.swift */; };
+		1010 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2010 /* AuthView.swift */; };
+		1011 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2011 /* DashboardView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0001 /* BinanceRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BinanceRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2001 /* BinanceRadarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinanceRadarApp.swift; sourceTree = "<group>"; };
+		2002 /* BinanceTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinanceTheme.swift; sourceTree = "<group>"; };
+		2003 /* BinanceDiamondLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinanceDiamondLogo.swift; sourceTree = "<group>"; };
+		2004 /* HapticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsManager.swift; sourceTree = "<group>"; };
+		2005 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
+		2006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		2007 /* BinanceInputField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinanceInputField.swift; sourceTree = "<group>"; };
+		2008 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		2009 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		2010 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		2011 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		2012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4001 = {
+			isa = PBXGroup;
+			children = (
+				4002 /* BinanceRadar */,
+				4003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4002 /* BinanceRadar */ = {
+			isa = PBXGroup;
+			children = (
+				2012 /* Info.plist */,
+				4004 /* Sources */,
+			);
+			path = BinanceRadar;
+			sourceTree = "<group>";
+		};
+		4003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0001 /* BinanceRadar.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4004 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				2001 /* BinanceRadarApp.swift */,
+				4005 /* Theme */,
+				4006 /* Services */,
+				4007 /* Models */,
+				4008 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		4005 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				2002 /* BinanceTheme.swift */,
+				2003 /* BinanceDiamondLogo.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		4006 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				2004 /* HapticsManager.swift */,
+				2005 /* BiometricAuthService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		4007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				2006 /* AuthViewModel.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4008 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				4009 /* Auth */,
+				4010 /* Dashboard */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		4009 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				2007 /* BinanceInputField.swift */,
+				2008 /* RegisterView.swift */,
+				2009 /* LoginView.swift */,
+				2010 /* AuthView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		4010 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				2011 /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5001 /* BinanceRadar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6001 /* Build configuration list for PBXNativeTarget "BinanceRadar" */;
+			buildPhases = (
+				7001 /* Sources */,
+				3001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BinanceRadar;
+			productName = BinanceRadar;
+			productReference = 0001 /* BinanceRadar.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					5001 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = 6002 /* Build configuration list for PBXProject "BinanceRadar" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = pl;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				pl,
+				Base,
+			);
+			mainGroup = 4001;
+			productRefGroup = 4003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5001 /* BinanceRadar */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1001 /* BinanceRadarApp.swift in Sources */,
+				1002 /* BinanceTheme.swift in Sources */,
+				1003 /* BinanceDiamondLogo.swift in Sources */,
+				1004 /* HapticsManager.swift in Sources */,
+				1005 /* BiometricAuthService.swift in Sources */,
+				1006 /* AuthViewModel.swift in Sources */,
+				1007 /* BinanceInputField.swift in Sources */,
+				1008 /* RegisterView.swift in Sources */,
+				1009 /* LoginView.swift in Sources */,
+				1010 /* AuthView.swift in Sources */,
+				1011 /* DashboardView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		9001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		9003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BinanceRadar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.binance.radar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BinanceRadar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.binance.radar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6001 /* Build configuration list for PBXNativeTarget "BinanceRadar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9003 /* Debug */,
+				9004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6002 /* Build configuration list for PBXProject "BinanceRadar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9001 /* Debug */,
+				9002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8001 /* Project object */;
+}
