@@ -58,7 +58,6 @@ struct CryptoCityMapView: View {
     @State private var pulsesActive: Bool = false
     @State private var isConverging: Bool = false
     @State private var shockwave: Bool = false
-    @State private var statusText: String = "SKANOWANIE SIECI MIEJSKIEJ..."
     @State private var timerSubscription: Timer?
     
     var body: some View {
@@ -139,61 +138,28 @@ struct CryptoCityMapView: View {
                     }
                 }
                 
-                // MARK: - 4. Central Binance Convergence Shockwave
+                // MARK: - 4. Central Convergence Shockwave
                 if shockwave {
                     Circle()
-                        .stroke(Color.binanceYellow, lineWidth: 3)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color(hex: "#FF7A00"), Color(hex: "#F0B90B")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 3
+                        )
                         .frame(width: 120, height: 120)
                         .scaleEffect(3.8)
                         .opacity(0.0)
                         .animation(.easeOut(duration: 0.75), value: shockwave)
                 }
                 
-                // Central Binance Diamond during convergence
-                if isConverging {
-                    VStack(spacing: 16) {
-                        BinanceDiamondLogo(size: 80)
-                            .shadow(color: Color.binanceYellow.opacity(0.8), radius: 24)
-                            .scaleEffect(shockwave ? 1.15 : 0.8)
-                        
-                        Text("BINANCE RADAR")
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .tracking(2.5)
-                        
-                        Text("POŁĄCZONO Z SIECIĄ KRYPTO")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color.binanceYellow)
-                            .tracking(1.5)
-                    }
-                    .transition(.scale(scale: 0.6).combined(with: .opacity))
-                }
-                
-                // MARK: - 5. HUD Overlay (Status Bar & Skip Button)
+                // MARK: - 5. Skip Button
                 VStack {
                     HStack {
-                        // Live Radar telemetry badge
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color.binanceGreen)
-                                .frame(width: 7, height: 7)
-                                .scaleEffect(radarRings ? 1.3 : 0.8)
-                            
-                            Text(statusText)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(Color.binanceCard.opacity(0.85))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.binanceLine, lineWidth: 1)
-                        )
-                        
                         Spacer()
                         
-                        // Skip / Pomiń Button
                         Button(action: {
                             HapticsManager.shared.lightImpact()
                             finishIntro()
@@ -203,7 +169,7 @@ struct CryptoCityMapView: View {
                                 .foregroundColor(Color.binanceSubtext)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 6)
-                                .background(Color.binanceCard.opacity(0.7))
+                                .background(Color.binanceCard.opacity(0.75))
                                 .clipShape(Capsule())
                         }
                     }
@@ -211,21 +177,6 @@ struct CryptoCityMapView: View {
                     .padding(.horizontal, 20)
                     
                     Spacer()
-                    
-                    // City Coordinates Pill
-                    HStack(spacing: 16) {
-                        Label("WARSZAWA // RADAR HUB", systemImage: "location.fill")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(Color.binanceSubtext)
-                        
-                        Spacer()
-                        
-                        Text("120 FPS NATIVE")
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
-                            .foregroundColor(Color.binanceGreen)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 28)
                 }
                 .opacity(isConverging ? 0.0 : 1.0)
             }
@@ -269,32 +220,30 @@ struct CryptoCityMapView: View {
         }
         
         // Step 3: Draw interconnecting liquidity lasers
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            self.statusText = "SYNCHRONIZACJA WĘZŁÓW..."
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
             HapticsManager.shared.mediumImpact()
             
-            withAnimation(.easeInOut(duration: 1.2)) {
+            withAnimation(.easeInOut(duration: 1.1)) {
                 self.lineProgress = 1.0
             }
         }
         
-        // Step 4: Full Convergence into Binance Diamond Core
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.1) {
-            self.statusText = "AUTORYZACJA TERMINALA..."
+        // Step 4: Full Convergence Warp
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
             HapticsManager.shared.rigidImpact()
             
-            withAnimation(.spring(response: 0.65, dampingFraction: 0.72)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.72)) {
                 self.isConverging = true
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 self.shockwave = true
                 HapticsManager.shared.notifySuccess()
             }
         }
         
-        // Step 5: Transition into Auth (Login / Register) Screen
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.3) {
+        // Step 5: Smooth Transition into TradingPL Logo Scene
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
             finishIntro()
         }
     }
