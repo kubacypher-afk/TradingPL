@@ -3,7 +3,7 @@ import UIKit
 
 // MARK: - Live Desk Timeframe Model
 enum LiveDeskTimeframe: String, CaseIterable, Identifiable {
-    case live = "LIVE"
+    case live = "• LIVE"
     case oneHour = "1H"
     case fourHours = "4H"
     case oneDay = "1D"
@@ -79,10 +79,29 @@ struct BotActivityItem: Identifiable {
     let badgeColor: Color
 }
 
-// MARK: - App Navigation Tabs
+// MARK: - Found Opportunity Model for Radar
+struct FoundTradeOpportunity: Identifiable {
+    let id = UUID()
+    let ticker: String
+    let companyName: String
+    let assetType: String // "Akcja US" / "Krypto"
+    let signalStrength: String // "Silne Kupno (Strong Buy)"
+    let confidenceScore: Double // 98.4%
+    let expectedProfit: String // "+$240.00"
+    let profitPercent: String // "+24.0%"
+    let entryPrice: String // "$142.50"
+    let takeProfit: String // "$176.70"
+    let stopLoss: String // "$139.65"
+    let riskReward: String // "1 : 4.2"
+    let catalyst: String // "Wybicie wolumenu +340%, RSI dywergencja"
+    let iconName: String
+    let brandColor: Color
+}
+
+// MARK: - App Navigation Tabs (Now with Radar instead of Markets)
 enum AppTab: String, CaseIterable, Identifiable {
     case home = "Home"
-    case markets = "Markets"
+    case radar = "Radar"
     case trades = "Trades"
     case wallet = "Wallet"
     case profile = "Profile"
@@ -92,7 +111,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .markets: return "chart.xyaxis.line"
+        case .radar: return "dot.radiowaves.left.and.right"
         case .trades: return "bolt.fill"
         case .wallet: return "wallet.pass.fill"
         case .profile: return "person.crop.circle.fill"
@@ -100,23 +119,49 @@ enum AppTab: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Main Dashboard View with Bottom Tab Bar
+// MARK: - Main Dashboard View
 struct DashboardView: View {
     @ObservedObject var viewModel: AuthViewModel
     
     @State private var currentTab: AppTab = .home
     @State private var selectedTimeframe: LiveDeskTimeframe = .live
     @State private var livePulse: Bool = false
-    @State private var isSharing: Bool = false
     @State private var showAllActivities: Bool = false
     @State private var currentPoints: [CGFloat] = LiveDeskTimeframe.live.curvePoints
     
-    // UI Palette matching user reference
+    // MARK: - Radar Tab States
+    @State private var isActionRadarActive: Bool = false
+    @State private var allocatedCapital: Double = 1000.0
+    @State private var maxLossPercent: Double = 3.0 // 3.0% max loss
+    @State private var isScanningAnimation: Bool = false
+    @State private var radarRotation: Double = 0
+    @State private var showFoundNotification: Bool = false
+    @State private var selectedOpportunityDetails: FoundTradeOpportunity? = nil
+    
+    // UI Palette
     private let neonGreen = Color(hex: "#00FFA3")
     private let darkBg = Color(hex: "#05070A")
-    private let cardBg = Color(hex: "#0F1318")
-    private let pillBg = Color(hex: "#12171E")
-    private let borderDark = Color(hex: "#1A222C")
+    private let cardBg = Color(hex: "#0E1217")
+    private let pillBg = Color(hex: "#13171F")
+    private let borderDark = Color(hex: "#1B222C")
+    
+    // Opportunity detected by bot algorithm
+    private let activeOpportunity = FoundTradeOpportunity(
+        ticker: "NVDA",
+        companyName: "NVIDIA Corporation",
+        assetType: "Akcja NASDAQ",
+        signalStrength: "SILNE KUPNO (STRONG BUY)",
+        confidenceScore: 98.4,
+        expectedProfit: "+$240.00",
+        profitPercent: "+24.0%",
+        entryPrice: "$142.50",
+        takeProfit: "$176.70",
+        stopLoss: "$138.20",
+        riskReward: "1 : 4.2",
+        catalyst: "Instytucjonalny skok wolumenu +340%, wybicie z flagi byka, rekomendacje analityków",
+        iconName: "cpu.fill",
+        brandColor: Color(hex: "#76B900")
+    )
     
     // Activity data (Recent bot trades and earnings)
     private let recentActivities: [BotActivityItem] = [
@@ -193,8 +238,8 @@ struct DashboardView: View {
                 switch currentTab {
                 case .home:
                     homeDeskContent
-                case .markets:
-                    marketsPlaceholderView
+                case .radar:
+                    radarDeskContent
                 case .trades:
                     tradesPlaceholderView
                 case .wallet:
@@ -205,168 +250,89 @@ struct DashboardView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            // Bottom Tab Navigation Bar
+            // Top Live In-App Notification (When Radar finds an action)
+            if showFoundNotification {
+                liveOpportunityBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(100)
+            }
+            
+            // Docked Bottom Tab Navigation Bar
             bottomTabBar
+                .zIndex(50)
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                 livePulse = true
             }
         }
-        .sheet(isPresented: $isSharing) {
-            ShareSheet(activityItems: ["TradingPL Desk: \(selectedTimeframe.earnings) \(selectedTimeframe.changeText)"])
+        .sheet(item: $selectedOpportunityDetails) { opportunity in
+            opportunityDetailSheet(opportunity)
         }
     }
     
-    // MARK: - Home Tab Content (1:1 with Screenshot, No Agents, With Activity)
+    // MARK: - ================= HOME TAB =================
+    // Ultra-clean: Clutter purged (No < Trading Desk, Share, lock, Grok Bot, or fomo subtitle)
     private var homeDeskContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // 1. Top Navigation & Status Bar (Matching Screenshot)
-                topHeaderBar
-                    .padding(.horizontal, 20)
-                    .padding(.top, 52)
+                // Clean Top Spacing (replaces old cluttered header)
+                HStack {
+                    // Small discreet live pulse dot
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(neonGreen)
+                            .frame(width: 7, height: 7)
+                            .shadow(color: neonGreen.opacity(0.8), radius: livePulse ? 5 : 2)
+                        
+                        Text("LIVE DESK")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(neonGreen.opacity(0.9))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: "#0A1F18"))
+                    .clipShape(Capsule())
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 54)
                 
-                // 2. Earnings and Multiplier Row
+                // Big Balance and PnL Multiplier
                 balanceSection
                     .padding(.horizontal, 20)
-                    .padding(.top, 24)
+                    .padding(.top, 14)
                 
-                // 3. Glowing Neon Green Curve Chart
+                // Glowing Neon Green Curve Chart
                 chartSection
-                    .frame(height: 140)
-                    .padding(.top, 16)
+                    .frame(height: 135)
+                    .padding(.top, 12)
                     .padding(.bottom, 20)
                 
-                // 4. Timeframe Selector (LIVE, 1H, 4H, 1D, 1W, ALL)
+                // Timeframe Selector with unwrapped clean pills
                 timeframeSelector
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 26)
                 
-                // 5. Activity Section (Recent Actions & Earnings Per Action)
+                // Activity Section (Recent Bot Trades & Earnings)
                 activitySection
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110) // Space for bottom tab bar
+                    .padding(.bottom, 125) // Prevent overlap with bottom dock
             }
         }
     }
     
-    // MARK: - 1. Top Header Bar
-    private var topHeaderBar: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // Back Chevron and "Trading Desk"
-                HStack(spacing: 8) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("Trading Desk")
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                
-                Spacer()
-                
-                // Share Capsule Button
-                Button(action: {
-                    HapticsManager.shared.lightImpact()
-                    isSharing = true
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Share")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 7)
-                    .background(pillBg)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(borderDark, lineWidth: 1)
-                    )
-                }
-                
-                // Discreet lock / sign out
-                Button(action: {
-                    HapticsManager.shared.lightImpact()
-                    viewModel.logout()
-                }) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color.binanceTextSecondary)
-                        .padding(8)
-                        .background(pillBg)
-                        .clipShape(Circle())
-                }
-                .padding(.leading, 4)
-            }
-            
-            // Subtitle Row: Bot Avatar, "Grok Bot >", "• Live", and Details
-            HStack(spacing: 8) {
-                // Bot Icon Circle
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: "#EAECEF"))
-                        .frame(width: 22, height: 22)
-                    
-                    Image(systemName: "quote.opening")
-                        .font(.system(size: 9, weight: .black))
-                        .foregroundColor(.black)
-                }
-                
-                // Bot Title
-                HStack(spacing: 4) {
-                    Text("Grok Bot")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(hex: "#848E9C"))
-                }
-                
-                // "• Live" Pill
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(neonGreen)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: neonGreen.opacity(0.8), radius: livePulse ? 4 : 2)
-                    
-                    Text("Live")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(neonGreen)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Color(hex: "#0A1F18"))
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(neonGreen.opacity(0.3), lineWidth: 1)
-                )
-                
-                Spacer()
-            }
-            
-            // Bot Telemetry Tagline
-            Text("fomo via pilot.py · Compounder 60% · 0 open")
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(Color(hex: "#848E9C"))
-        }
-    }
-    
-    // MARK: - 2. Balance & Multiplier Section
+    // MARK: - Clean Balance Section
     private var balanceSection: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             // Large Bold Earnings Display
             Text(selectedTimeframe.earnings)
                 .font(.system(size: 44, weight: .black, design: .rounded))
                 .foregroundColor(.white)
                 .tracking(0.5)
             
-            // Green PnL Pill (e.g. ▲ +$0.00 (0.00%))
+            // Green PnL Pill (▲ +$0.00 (0.00%))
             HStack(spacing: 4) {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 11, weight: .bold))
@@ -386,7 +352,7 @@ struct DashboardView: View {
             Text(selectedTimeframe.multiplier)
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(Color(hex: "#848E9C"))
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 9)
                 .padding(.vertical, 6)
                 .background(pillBg)
                 .clipShape(Capsule())
@@ -398,7 +364,7 @@ struct DashboardView: View {
         }
     }
     
-    // MARK: - 3. Chart Section with Radiant Glow
+    // MARK: - Chart Section
     private var chartSection: some View {
         GeometryReader { chartProxy in
             let w = chartProxy.size.width
@@ -447,9 +413,9 @@ struct DashboardView: View {
         }
     }
     
-    // MARK: - 4. Timeframe Selector Pills
+    // MARK: - Timeframe Selector (Guaranteed No Text Wrapping)
     private var timeframeSelector: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             ForEach(LiveDeskTimeframe.allCases) { tf in
                 Button(action: {
                     HapticsManager.shared.lightImpact()
@@ -458,39 +424,32 @@ struct DashboardView: View {
                         currentPoints = tf.curvePoints
                     }
                 }) {
-                    HStack(spacing: 5) {
-                        if tf == .live {
-                            Circle()
-                                .fill(selectedTimeframe == tf ? Color.black : neonGreen)
-                                .frame(width: 5, height: 5)
-                        }
-                        
-                        Text(tf.rawValue)
-                            .font(.system(size: 13, weight: selectedTimeframe == tf ? .heavy : .semibold))
-                    }
-                    .foregroundColor(selectedTimeframe == tf ? Color.black : Color(hex: "#7D8693"))
-                    .padding(.horizontal, tf == .live ? 16 : 12)
-                    .frame(height: 34)
-                    .background(
-                        ZStack {
-                            if selectedTimeframe == tf {
-                                Capsule()
-                                    .fill(neonGreen)
-                                    .shadow(color: neonGreen.opacity(0.6), radius: 8, x: 0, y: 2)
+                    Text(tf.rawValue)
+                        .font(.system(size: 13, weight: selectedTimeframe == tf ? .heavy : .semibold))
+                        .foregroundColor(selectedTimeframe == tf ? Color.black : Color(hex: "#7D8693"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                        .background(
+                            ZStack {
+                                if selectedTimeframe == tf {
+                                    Capsule()
+                                        .fill(neonGreen)
+                                        .shadow(color: neonGreen.opacity(0.6), radius: 8, x: 0, y: 2)
+                                } else {
+                                    Capsule()
+                                        .fill(pillBg.opacity(0.6))
+                                }
                             }
-                        }
-                    )
+                        )
                 }
                 .buttonStyle(PlainButtonStyle())
-                
-                if tf != LiveDeskTimeframe.allCases.last {
-                    Spacer()
-                }
             }
         }
     }
     
-    // MARK: - 5. Activity Section (Bot Actions & Profit Per Action)
+    // MARK: - Activity Section
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             // Header Row: "Activity" and "See all"
@@ -520,7 +479,6 @@ struct DashboardView: View {
         }
     }
     
-    // MARK: - Activity Row Card
     private func activityRow(_ item: BotActivityItem) -> some View {
         HStack(spacing: 12) {
             // Token Icon Badge
@@ -593,7 +551,562 @@ struct DashboardView: View {
         )
     }
     
-    // MARK: - Bottom Navigation Tab Bar ("Pasek z zakładkami na dole")
+    // MARK: - ================= RADAR TAB =================
+    // Action Mode, Capital Setup, Max Loss, Live Scanning, Push Notifications & Trade Details
+    private var radarDeskContent: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 20) {
+                // 1. Radar Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("RADAR BOT")
+                            .font(.system(size: 12, weight: .black, design: .monospaced))
+                            .foregroundColor(neonGreen)
+                        
+                        Text("Skaner Rynku & Akcji")
+                            .font(.system(size: 24, weight: .black))
+                            .foregroundColor(.white)
+                    }
+                    
+                    Spacer()
+                    
+                    // Radar Status Badge
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(isActionRadarActive ? neonGreen : Color.gray)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: isActionRadarActive ? neonGreen.opacity(0.9) : Color.clear, radius: 5)
+                        
+                        Text(isActionRadarActive ? "AKTYWNY" : "STANDBY")
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .foregroundColor(isActionRadarActive ? neonGreen : Color.gray)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(isActionRadarActive ? Color(hex: "#0A1F18") : pillBg)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(isActionRadarActive ? neonGreen.opacity(0.4) : borderDark, lineWidth: 1)
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 54)
+                
+                // 2. Big Action Mode Toggle Button ("Tryb Akcji")
+                Button(action: {
+                    toggleActionMode()
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: isActionRadarActive ? [Color(hex: "#0E281F"), Color(hex: "#0A1B15")] : [Color(hex: "#141922"), Color(hex: "#0E131A")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(isActionRadarActive ? neonGreen : borderDark, lineWidth: isActionRadarActive ? 2 : 1)
+                            )
+                            .shadow(color: isActionRadarActive ? neonGreen.opacity(0.3) : Color.clear, radius: 15)
+                        
+                        HStack(spacing: 16) {
+                            // Animated Radar Sweep Dish Icon
+                            ZStack {
+                                Circle()
+                                    .fill(isActionRadarActive ? neonGreen.opacity(0.18) : Color.white.opacity(0.06))
+                                    .frame(width: 56, height: 56)
+                                
+                                if isActionRadarActive {
+                                    Circle()
+                                        .stroke(neonGreen.opacity(0.4), lineWidth: 1)
+                                        .frame(width: 44, height: 44)
+                                    
+                                    // Rotating sweep line
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(colors: [neonGreen, Color.clear], startPoint: .top, endPoint: .bottom)
+                                        )
+                                        .frame(width: 2, height: 22)
+                                        .offset(y: -11)
+                                        .rotationEffect(.degrees(radarRotation))
+                                }
+                                
+                                Image(systemName: "dot.radiowaves.left.and.right")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(isActionRadarActive ? neonGreen : Color(hex: "#848E9C"))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("TRYB AKCJI")
+                                    .font(.system(size: 18, weight: .black))
+                                    .foregroundColor(.white)
+                                
+                                Text(isActionRadarActive ? "Algorytm szuka okazji z bota w czasie rzeczywistym..." : "Dotknij, aby uruchomić automatyczne skanowanie")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(isActionRadarActive ? neonGreen.opacity(0.9) : Color(hex: "#848E9C"))
+                                    .lineLimit(2)
+                            }
+                            
+                            Spacer()
+                            
+                            // Visual Switch Pill
+                            ZStack(alignment: isActionRadarActive ? .trailing : .leading) {
+                                Capsule()
+                                    .fill(isActionRadarActive ? neonGreen : Color(hex: "#262D38"))
+                                    .frame(width: 52, height: 30)
+                                
+                                Circle()
+                                    .fill(isActionRadarActive ? Color.black : Color.white)
+                                    .frame(width: 24, height: 24)
+                                    .padding(.horizontal, 3)
+                            }
+                        }
+                        .padding(18)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 20)
+                
+                // 3. Configuration Parameters: Capital & Max Loss ("pod spodem ustawiamy kapitał i maksymalna strata")
+                VStack(spacing: 16) {
+                    // Header of Config Card
+                    HStack {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundColor(neonGreen)
+                        Text("Zarządzanie Kapitałem i Ryzykiem")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    
+                    // Parameter A: Kapitał
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Twój Kapitał na Akcję:")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color(hex: "#848E9C"))
+                            Spacer()
+                            Text("$\(Int(allocatedCapital)) USD")
+                                .font(.system(size: 17, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        
+                        Slider(value: $allocatedCapital, in: 100...10000, step: 50)
+                            .accentColor(neonGreen)
+                        
+                        // Quick Capital Chips
+                        HStack(spacing: 8) {
+                            ForEach([250.0, 500.0, 1000.0, 2500.0, 5000.0], id: \.self) { cap in
+                                Button(action: {
+                                    HapticsManager.shared.lightImpact()
+                                    withAnimation { allocatedCapital = cap }
+                                }) {
+                                    Text("$\(Int(cap))")
+                                        .font(.system(size: 11, weight: allocatedCapital == cap ? .bold : .medium))
+                                        .foregroundColor(allocatedCapital == cap ? Color.black : Color(hex: "#848E9C"))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(allocatedCapital == cap ? neonGreen : pillBg)
+                                        .clipShape(Capsule())
+                                        .overlay(Capsule().stroke(borderDark, lineWidth: 1))
+                                }
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .background(pillBg.opacity(0.8))
+                    .cornerRadius(12)
+                    
+                    // Parameter B: Maksymalna Strata (Max Loss / Stop Loss)
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Maksymalna Dopuszczalna Strata:")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color(hex: "#848E9C"))
+                            Spacer()
+                            let lossDollar = allocatedCapital * (maxLossPercent / 100.0)
+                            Text("-\(String(format: "%.1f", maxLossPercent))% (-$\(Int(lossDollar)))")
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundColor(Color(hex: "#F6465D"))
+                        }
+                        
+                        Slider(value: $maxLossPercent, in: 1.0...10.0, step: 0.5)
+                            .accentColor(Color(hex: "#F6465D"))
+                        
+                        // Safety Explanation
+                        HStack(spacing: 6) {
+                            Image(systemName: "shield.checkmark.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(neonGreen)
+                            Text("Automatyczny Stop Loss natychmiast zabezpieczy kapitał")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#848E9C"))
+                        }
+                    }
+                    .padding(14)
+                    .background(pillBg.opacity(0.8))
+                    .cornerRadius(12)
+                }
+                .padding(18)
+                .background(cardBg)
+                .cornerRadius(18)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(borderDark, lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+                
+                // 4. Znaleziona Akcja (Szczegóły akcji: co to, ile zarobek, wszystkie szczegóły)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Image(systemName: "target")
+                            .foregroundColor(neonGreen)
+                        Text("Ostatnio Wykryta Okazja z Bota")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                        
+                        Text("LIVE SYGNAŁ")
+                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .foregroundColor(neonGreen)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(hex: "#0A1F18"))
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Main Opportunity Card
+                    opportunityCard(activeOpportunity)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 125)
+            }
+        }
+    }
+    
+    // MARK: - Opportunity Card (Szczegóły znalezionej akcji)
+    private func opportunityCard(_ item: FoundTradeOpportunity) -> some View {
+        VStack(spacing: 16) {
+            // Header Row: Ticker, Type, Signal
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(item.brandColor.opacity(0.18))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: item.iconName)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(item.brandColor)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(item.ticker)
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(.white)
+                        
+                        Text(item.assetType)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "#848E9C"))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(pillBg)
+                            .clipShape(Capsule())
+                    }
+                    
+                    Text(item.companyName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#848E9C"))
+                }
+                
+                Spacer()
+                
+                // Expected Profit Display
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(item.expectedProfit)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundColor(neonGreen)
+                    
+                    Text(item.profitPercent)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(neonGreen.opacity(0.85))
+                }
+            }
+            
+            Divider()
+                .background(borderDark)
+            
+            // Key Trade Metrics: Entry, Take Profit, Stop Loss, Risk/Reward
+            HStack(spacing: 0) {
+                tradeMetricCol(title: "WEJŚCIE", value: item.entryPrice, color: .white)
+                Spacer()
+                tradeMetricCol(title: "TAKE PROFIT", value: item.takeProfit, color: neonGreen)
+                Spacer()
+                tradeMetricCol(title: "STOP LOSS", value: item.stopLoss, color: Color(hex: "#F6465D"))
+                Spacer()
+                tradeMetricCol(title: "R : R", value: item.riskReward, color: Color(hex: "#FCD535"))
+            }
+            .padding(.horizontal, 4)
+            
+            // AI Bot Reasoning Catalyst
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                    .foregroundColor(neonGreen)
+                
+                Text(item.catalyst)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#B7BDC6"))
+                    .lineLimit(2)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(hex: "#081510"))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(neonGreen.opacity(0.18), lineWidth: 1)
+            )
+            
+            // Action Buttons: "Szczegóły Akcji" & "Wykonaj Transakcję"
+            HStack(spacing: 12) {
+                Button(action: {
+                    HapticsManager.shared.lightImpact()
+                    selectedOpportunityDetails = item
+                }) {
+                    Text("Szczegóły Akcji")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(pillBg)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(borderDark, lineWidth: 1)
+                        )
+                }
+                
+                Button(action: {
+                    HapticsManager.shared.notifySuccess()
+                    // Auto-execute trade simulation
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                        Text("Auto-Trade")
+                    }
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(neonGreen)
+                    .cornerRadius(12)
+                    .shadow(color: neonGreen.opacity(0.4), radius: 8, x: 0, y: 3)
+                }
+            }
+        }
+        .padding(18)
+        .background(cardBg)
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(neonGreen.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    private func tradeMetricCol(title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(hex: "#848E9C"))
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(color)
+        }
+    }
+    
+    // MARK: - Live In-App Push Notification Banner
+    private var liveOpportunityBanner: some View {
+        VStack {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(neonGreen.opacity(0.2))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "bell.badge.fill")
+                        .foregroundColor(neonGreen)
+                        .font(.system(size: 16))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Radar Bota: Nowa Okazja!")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("NVDA: Oczekiwany zysk +$240.00 (+24%)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(neonGreen)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    HapticsManager.shared.lightImpact()
+                    withAnimation { showFoundNotification = false }
+                    selectedOpportunityDetails = activeOpportunity
+                }) {
+                    Text("Sprawdź")
+                        .font(.system(size: 12, weight: .heavy))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(neonGreen)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(14)
+            .background(Color(hex: "#0E1C15"))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(neonGreen.opacity(0.6), lineWidth: 1)
+            )
+            .shadow(color: neonGreen.opacity(0.3), radius: 14, x: 0, y: 4)
+            .padding(.horizontal, 16)
+            .padding(.top, 50)
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Action Mode Toggle Logic
+    private func toggleActionMode() {
+        HapticsManager.shared.mediumImpact()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            isActionRadarActive.toggle()
+        }
+        
+        if isActionRadarActive {
+            // Start radar sweep rotation
+            withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+                radarRotation = 360
+            }
+            
+            // Trigger in-app live notification after 1.8 seconds simulating bot detection
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                HapticsManager.shared.notifySuccess()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                    showFoundNotification = true
+                }
+                
+                // Auto hide banner after 6 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+                    withAnimation {
+                        showFoundNotification = false
+                    }
+                }
+            }
+        } else {
+            radarRotation = 0
+            showFoundNotification = false
+        }
+    }
+    
+    // MARK: - Opportunity Detail Sheet (Wszystkie szczegóły akcji)
+    private func opportunityDetailSheet(_ item: FoundTradeOpportunity) -> some View {
+        ZStack {
+            darkBg.ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("SZCZEGÓŁY AKCJI")
+                            .font(.system(size: 11, weight: .black, design: .monospaced))
+                            .foregroundColor(neonGreen)
+                        Text(item.companyName)
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    Button("Zamknij") {
+                        selectedOpportunityDetails = nil
+                    }
+                    .foregroundColor(Color(hex: "#848E9C"))
+                }
+                .padding(.top, 24)
+                
+                // Profit Hero Box
+                VStack(spacing: 6) {
+                    Text("Prognozowany Zysk:")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#848E9C"))
+                    Text(item.expectedProfit)
+                        .font(.system(size: 42, weight: .black, design: .rounded))
+                        .foregroundColor(neonGreen)
+                    Text("Zwrot z kapitału: \(item.profitPercent)")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(neonGreen.opacity(0.85))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(20)
+                .background(cardBg)
+                .cornerRadius(16)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(borderDark, lineWidth: 1))
+                
+                // Full Spec List
+                VStack(spacing: 12) {
+                    specRow(label: "Ticker & Giełda", val: "\(item.ticker) (NASDAQ)")
+                    specRow(label: "Rekomendacja Bota", val: item.signalStrength)
+                    specRow(label: "AI Confidence", val: "\(String(format: "%.1f", item.confidenceScore))%")
+                    specRow(label: "Cena Wejścia", val: item.entryPrice)
+                    specRow(label: "Take Profit Target", val: item.takeProfit)
+                    specRow(label: "Stop Loss Ochronny", val: item.stopLoss)
+                    specRow(label: "Stosunek Zysku do Ryzyka", val: item.riskReward)
+                    specRow(label: "Kapitał Operacyjny", val: "$\(Int(allocatedCapital)) USD")
+                    specRow(label: "Zabezpieczona Strata", val: "Max $\(Int(allocatedCapital * (maxLossPercent / 100.0))) USD")
+                }
+                .padding(16)
+                .background(cardBg)
+                .cornerRadius(16)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(borderDark, lineWidth: 1))
+                
+                Spacer()
+                
+                // Big Confirm Button
+                Button(action: {
+                    HapticsManager.shared.notifySuccess()
+                    selectedOpportunityDetails = nil
+                }) {
+                    Text("Otwórz Pozycję Zgodnie ze Strategią")
+                        .font(.system(size: 16, weight: .heavy))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(neonGreen)
+                        .cornerRadius(14)
+                        .shadow(color: neonGreen.opacity(0.4), radius: 10, x: 0, y: 3)
+                }
+                .padding(.bottom, 20)
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    private func specRow(label: String, val: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundColor(Color(hex: "#848E9C"))
+            Spacer()
+            Text(val)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+        }
+    }
+    
+    // MARK: - Bottom Navigation Tab Bar (Home, Radar, Trades, Wallet, Profile)
     private var bottomTabBar: some View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases) { tab in
@@ -642,21 +1155,10 @@ struct DashboardView: View {
         )
     }
     
-    // MARK: - Placeholder Tabs
-    private var marketsPlaceholderView: some View {
-        VStack(spacing: 20) {
-            Text("Live Markets Watchlist")
-                .font(.title2.bold())
-                .foregroundColor(.white)
-            Text("Real-time order books & radar scanners")
-                .foregroundColor(Color.binanceTextSecondary)
-        }
-        .padding(.bottom, 80)
-    }
-    
+    // MARK: - Placeholders for other tabs
     private var tradesPlaceholderView: some View {
         VStack(spacing: 20) {
-            Text("Bot Engine Terminal")
+            Text("Bot Execution Terminal")
                 .font(.title2.bold())
                 .foregroundColor(.white)
             Text("Autonomous DCA & Grid execution active")
@@ -754,15 +1256,4 @@ struct LiveDeskChartFill: Shape {
         path.closeSubpath()
         return path
     }
-}
-
-// MARK: - Native iOS Share Sheet Wrapper
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
