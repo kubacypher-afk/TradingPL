@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Binance Master Authentication Screen
+// MARK: - Master Authentication Screen (Clean & High-Motion)
 struct AuthView: View {
     @ObservedObject var viewModel: AuthViewModel
     @Namespace private var tabNamespace
@@ -11,55 +11,36 @@ struct AuthView: View {
             Color.binanceBg
                 .ignoresSafeArea()
             
+            // Subtle ambient lighting behind card
+            RadialGradient(
+                colors: [
+                    Color(hex: "#FF7A00").opacity(0.12),
+                    Color(hex: "#F0B90B").opacity(0.04),
+                    Color.clear
+                ],
+                center: .top,
+                startRadius: 20,
+                endRadius: 360
+            )
+            .ignoresSafeArea()
+            
             VStack(spacing: 0) {
-                // MARK: - Top Header (TradingPL & Binance Status)
-                HStack(spacing: 10) {
-                    TradingPLLogoView(size: 32, showGlow: false)
+                // MARK: - 1. Top Header (Clean Minimalist Branding)
+                HStack(spacing: 12) {
+                    TradingPLLogoView(size: 36, showGlow: false)
                     
-                    VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: 4) {
-                            Text("TradingPL")
-                                .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundColor(.binanceTextPrimary)
-                            Text("PRO")
-                                .font(.system(size: 10, weight: .black, design: .monospaced))
-                                .foregroundColor(Color(hex: "#FF7A00"))
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color(hex: "#FF7A00").opacity(0.15))
-                                .cornerRadius(4)
-                        }
-                        
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color.binanceGreen)
-                                .frame(width: 5, height: 5)
-                            Text("ENGINE 24/7 ONLINE")
-                                .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceGreen)
-                        }
-                    }
+                    Text("TradingPL")
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundColor(.binanceTextPrimary)
+                        .tracking(1.2)
                     
                     Spacer()
-                    
-                    // Network / Passkey Badge
-                    HStack(spacing: 4) {
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 11))
-                        Text("PASSKEY")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    }
-                    .foregroundColor(.binanceYellow)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.binanceYellow.opacity(0.12))
-                    .cornerRadius(6)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 16)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
                 
-                // MARK: - Error Banner (if any)
+                // MARK: - 2. Error Banner
                 if let error = viewModel.errorMessage {
                     HStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -72,17 +53,17 @@ struct AuthView: View {
                     }
                     .padding(12)
                     .background(Color.binanceRedBg)
-                    .cornerRadius(8)
+                    .cornerRadius(10)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.binanceRed.opacity(0.3), lineWidth: 1)
                     )
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 12)
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 
-                // MARK: - Success Banner (e.g. after Registration)
+                // MARK: - 3. Success Banner
                 if let success = viewModel.successBannerMessage {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
@@ -95,59 +76,54 @@ struct AuthView: View {
                     }
                     .padding(12)
                     .background(Color.binanceGreenBg)
-                    .cornerRadius(8)
+                    .cornerRadius(10)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.binanceGreen.opacity(0.3), lineWidth: 1)
                     )
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 12)
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 
-                // MARK: - Binance Pro Tab Bar (Sliding Indicator)
-                HStack(spacing: 0) {
+                // MARK: - 4. Modern Floating Capsule Segment Switcher (120 FPS)
+                HStack(spacing: 6) {
                     ForEach(AuthTab.allCases, id: \.self) { tab in
                         Button(action: {
                             HapticsManager.shared.lightImpact()
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.72)) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                                 viewModel.selectedTab = tab
                                 viewModel.errorMessage = nil
                             }
                         }) {
-                            VStack(spacing: 8) {
-                                Text(tab.rawValue)
-                                    .font(.system(size: 15, weight: viewModel.selectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(viewModel.selectedTab == tab ? .binanceTextPrimary : .binanceTextSecondary)
-                                    .frame(maxWidth: .infinity)
-                                
-                                // Sliding Yellow Bar
-                                ZStack {
-                                    if viewModel.selectedTab == tab {
-                                        Rectangle()
-                                            .fill(Color.binanceYellow)
-                                            .frame(height: 2.5)
-                                            .matchedGeometryEffect(id: "activeTabLine", in: tabNamespace)
-                                            .shadow(color: Color.binanceYellow.opacity(0.5), radius: 4, x: 0, y: 1)
-                                    } else {
-                                        Rectangle()
-                                            .fill(Color.clear)
-                                            .frame(height: 2.5)
+                            Text(tab.rawValue)
+                                .font(.system(size: 14, weight: viewModel.selectedTab == tab ? .bold : .semibold))
+                                .foregroundColor(viewModel.selectedTab == tab ? .binanceBg : .binanceTextSecondary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 40)
+                                .background(
+                                    ZStack {
+                                        if viewModel.selectedTab == tab {
+                                            Capsule()
+                                                .fill(Color.binanceYellow)
+                                                .matchedGeometryEffect(id: "activeTabCapsule", in: tabNamespace)
+                                                .shadow(color: Color.binanceYellow.opacity(0.4), radius: 8, x: 0, y: 2)
+                                        }
                                     }
-                                }
-                            }
+                                )
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(4)
+                .background(Color.binanceCard)
+                .clipShape(Capsule())
                 .overlay(
-                    Rectangle()
-                        .fill(Color.binanceBorder)
-                        .frame(height: 1),
-                    alignment: .bottom
+                    Capsule().stroke(Color.binanceBorder, lineWidth: 1)
                 )
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
                 
-                // MARK: - Scrollable Form Body
+                // MARK: - 5. Scrollable Form Body
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
                         if viewModel.selectedTab == .login {
@@ -164,9 +140,9 @@ struct AuthView: View {
                                 ))
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .padding(.bottom, 36)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 4)
+                    .padding(.bottom, 40)
                 }
             }
         }
