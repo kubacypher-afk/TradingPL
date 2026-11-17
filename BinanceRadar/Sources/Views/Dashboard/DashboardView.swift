@@ -1,535 +1,373 @@
 import SwiftUI
+import UIKit
 
-// MARK: - Binance Pro Mobile Dashboard with 120 FPS Landing Animation
+// MARK: - Live Desk Timeframe Model
+enum LiveDeskTimeframe: String, CaseIterable, Identifiable {
+    case live = "LIVE"
+    case oneHour = "1H"
+    case fourHours = "4H"
+    case oneDay = "1D"
+    case oneWeek = "1W"
+    case all = "ALL"
+    
+    var id: String { rawValue }
+    
+    var earnings: String {
+        switch self {
+        case .live: return "$14,820.50"
+        case .oneHour: return "$842.10"
+        case .fourHours: return "$2,480.30"
+        case .oneDay: return "$6,920.80"
+        case .oneWeek: return "$28,450.00"
+        case .all: return "$142,890.00"
+        }
+    }
+    
+    var changeText: String {
+        switch self {
+        case .live: return "+$1,420.50 (10.6%)"
+        case .oneHour: return "+$84.20 (1.20%)"
+        case .fourHours: return "+$312.40 (4.80%)"
+        case .oneDay: return "+$890.50 (8.20%)"
+        case .oneWeek: return "+$4,120.00 (18.4%)"
+        case .all: return "+$34,200.00 (42.5%)"
+        }
+    }
+    
+    var multiplier: String {
+        switch self {
+        case .live: return "1.00x"
+        case .oneHour: return "1.25x"
+        case .fourHours: return "1.50x"
+        case .oneDay: return "2.00x"
+        case .oneWeek: return "2.50x"
+        case .all: return "3.00x"
+        }
+    }
+    
+    // Normalized curve points (0.0 bottom, 1.0 top)
+    var curvePoints: [CGFloat] {
+        switch self {
+        case .live:
+            return [0.50, 0.50, 0.50, 0.51, 0.50, 0.52, 0.51, 0.53, 0.52, 0.54, 0.53, 0.55]
+        case .oneHour:
+            return [0.42, 0.44, 0.40, 0.47, 0.49, 0.46, 0.52, 0.54, 0.58, 0.60, 0.63, 0.66]
+        case .fourHours:
+            return [0.36, 0.39, 0.43, 0.41, 0.49, 0.56, 0.53, 0.59, 0.63, 0.69, 0.67, 0.73]
+        case .oneDay:
+            return [0.28, 0.32, 0.30, 0.37, 0.44, 0.42, 0.52, 0.60, 0.64, 0.72, 0.76, 0.80]
+        case .oneWeek:
+            return [0.22, 0.26, 0.34, 0.30, 0.42, 0.50, 0.54, 0.62, 0.70, 0.77, 0.84, 0.90]
+        case .all:
+            return [0.18, 0.22, 0.28, 0.35, 0.45, 0.53, 0.63, 0.71, 0.81, 0.87, 0.92, 0.96]
+        }
+    }
+}
+
+// MARK: - Dashboard View (1:1 Live Desk Screen from User Request)
 struct DashboardView: View {
     @ObservedObject var viewModel: AuthViewModel
     
-    // Animation States for Staggered 120 FPS Landing
-    @State private var hasLanded: Bool = false
-    @State private var showBalance: Bool = true
-    @State private var copiedToken: String? = nil
-    @State private var activeBottomTab: Int = 0
+    @State private var selectedTimeframe: LiveDeskTimeframe = .live
+    @State private var livePulse: Bool = false
+    @State private var isSharing: Bool = false
+    @State private var currentPoints: [CGFloat] = LiveDeskTimeframe.live.curvePoints
     
-    // Mock Tickers
-    let tickers = [
-        ("BTCUSDT", "94,280.50", "+2.84%", true),
-        ("ETHUSDT", "3,145.20", "+1.65%", true),
-        ("SOLUSDT", "218.40", "-0.92%", false),
-        ("BNBUSDT", "642.10", "+1.15%", true),
-        ("XAUUSD", "2,684.10", "+0.75%", true)
-    ]
+    // Exact colors from user screenshot
+    private let neonGreen = Color(hex: "#00FFA3")
+    private let darkBg = Color(hex: "#07090C")
+    private let pillBg = Color(hex: "#10141A")
+    private let borderDark = Color(hex: "#1A222C")
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Background
-            Color.binanceBg
+        ZStack {
+            // Pitch Black Background
+            darkBg
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // MARK: - 1. Top Header Bar (User, VIP, Face ID Badge, Logout)
-                HStack(spacing: 12) {
-                    // Avatar with Binance Yellow Outline
-                    ZStack {
+                // MARK: - 1. Top Bar: Live Desk & Share
+                HStack {
+                    // "Live Desk" Pill
+                    HStack(spacing: 7) {
                         Circle()
-                            .fill(Color.binanceSurface)
-                            .frame(width: 38, height: 38)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.binanceYellow, lineWidth: 1.5)
-                            )
+                            .fill(neonGreen)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: neonGreen.opacity(0.8), radius: livePulse ? 5 : 2)
                         
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 34))
-                            .foregroundColor(.binanceYellow)
+                        Text("Live Desk")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(neonGreen)
                     }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text(viewModel.registeredUserPhone.isEmpty ? "Kuba Trader" : viewModel.registeredUserPhone)
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.binanceTextPrimary)
-                            
-                            Text("VIP 1")
-                                .font(.system(size: 9, weight: .black, design: .monospaced))
-                                .foregroundColor(.binanceYellow)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(Color.binanceYellow.opacity(0.15))
-                                .cornerRadius(4)
-                        }
-                        
-                        HStack(spacing: 6) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "faceid")
-                                    .font(.system(size: 9))
-                                Text("FACE ID")
-                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            }
-                            .foregroundColor(.binanceGreen)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.binanceGreenBg)
-                            .cornerRadius(3)
-                            
-                            Text("UID: 89421098")
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundColor(.binanceTextMuted)
-                        }
-                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color(hex: "#0A1F18"))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(neonGreen.opacity(0.35), lineWidth: 1)
+                    )
                     
                     Spacer()
                     
-                    // Lock / Logout Button (Quick Re-test of Face ID)
+                    // "Share" Pill Button
                     Button(action: {
+                        HapticsManager.shared.lightImpact()
+                        isSharing = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("Share")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 7)
+                        .background(pillBg)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(borderDark, lineWidth: 1)
+                        )
+                    }
+                    
+                    // Discreet lock button to test Face ID again
+                    Button(action: {
+                        HapticsManager.shared.lightImpact()
                         viewModel.logout()
                     }) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(Color.binanceTextSecondary)
+                            .padding(8)
+                            .background(pillBg)
+                            .clipShape(Circle())
+                    }
+                    .padding(.leading, 4)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 56)
+                
+                // MARK: - 2. Big Balance & PnL Pill Row
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .center, spacing: 12) {
+                        // Big Earnings Value
+                        Text(selectedTimeframe.earnings)
+                            .font(.system(size: 44, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .tracking(0.5)
+                        
+                        // Green PnL Pill
                         HStack(spacing: 4) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 11))
-                            Text("Zablokuj")
-                                .font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 11, weight: .bold))
+                            Text(selectedTimeframe.changeText)
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
                         }
-                        .foregroundColor(.binanceRed)
+                        .foregroundColor(neonGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.binanceRedBg)
-                        .cornerRadius(8)
+                        .background(Color(hex: "#0C1F19"))
+                        .clipShape(Capsule())
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.binanceRed.opacity(0.25), lineWidth: 1)
+                            Capsule().stroke(neonGreen.opacity(0.25), lineWidth: 1)
                         )
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 12)
-                .background(Color.binanceBg)
-                .offset(y: hasLanded ? 0 : -30)
-                .opacity(hasLanded ? 1 : 0)
-                
-                // MARK: - Scrollable Dashboard Content
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        // MARK: - 2. Portfolio Balance Card (Binance Futures Style)
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack {
-                                HStack(spacing: 6) {
-                                    Text("Szacowane Saldo (Wirtualne)")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(.binanceTextSecondary)
-                                    
-                                    Button(action: {
-                                        HapticsManager.shared.lightImpact()
-                                        showBalance.toggle()
-                                    }) {
-                                        Image(systemName: showBalance ? "eye.fill" : "eye.slash.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.binanceTextSecondary)
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                Text("Paper Trading 24/7")
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.binanceYellow)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Color.binanceYellow.opacity(0.12))
-                                    .cornerRadius(4)
-                            }
-                            
-                            // Balance Amount
-                            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                Text(showBalance ? "14,850.40" : "••••••••")
-                                    .font(.system(size: 28, weight: .black, design: .rounded))
-                                    .foregroundColor(.binanceTextPrimary)
-                                
-                                Text("PLN")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.binanceTextSecondary)
-                                
-                                Spacer()
-                                
-                                // 24h PnL badge
-                                HStack(spacing: 3) {
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.system(size: 10, weight: .bold))
-                                    Text("+1,240.20 PLN (+9.1%)")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                }
-                                .foregroundColor(.binanceGreen)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.binanceGreenBg)
-                                .cornerRadius(6)
-                            }
-                            
-                            Divider()
-                                .background(Color.binanceBorder)
-                            
-                            // 3 Mini Stats
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Skuteczność AI")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.binanceTextSecondary)
-                                    Text("76.4%")
-                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.binanceTextPrimary)
-                                }
-                                Spacer()
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Bilans Zagrań")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.binanceTextSecondary)
-                                    Text("26 TP / 8 SL")
-                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.binanceGreen)
-                                }
-                                Spacer()
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Kurs USD/PLN")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.binanceTextSecondary)
-                                    Text("4.08 zł")
-                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.binanceYellow)
-                                }
-                            }
-                        }
-                        .padding(16)
-                        .background(Color.binanceCard)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.binanceBorder, lineWidth: 1)
-                        )
-                        .scaleEffect(hasLanded ? 1.0 : 0.92)
-                        .opacity(hasLanded ? 1 : 0)
                         
-                        // MARK: - 3. Quick Action Buttons
-                        HStack(spacing: 12) {
-                            QuickActionButton(icon: "bolt.fill", title: "Radar AI", color: .binanceYellow)
-                            QuickActionButton(icon: "arrow.triangle.2.circlepath", title: "Sygnały", color: .binanceGreen)
-                            QuickActionButton(icon: "chart.line.uptrend.xyaxis", title: "PnL Audyt", color: .binanceYellow)
-                            QuickActionButton(icon: "shield.lefthalf.filled", title: "Ryzyko", color: .binanceTextPrimary)
-                        }
-                        .offset(y: hasLanded ? 0 : 20)
-                        .opacity(hasLanded ? 1 : 0)
-                        
-                        // MARK: - 4. Live Tickers Marquee
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("RYNKI NA ŻYWO (RAM 10M)")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.binanceTextSecondary)
-                                Spacer()
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(Color.binanceYellow)
-                                        .frame(width: 5, height: 5)
-                                    Text("LIVE")
-                                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.binanceYellow)
-                                }
-                            }
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(tickers, id: \.0) { ticker in
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(ticker.0)
-                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                                .foregroundColor(.binanceTextPrimary)
-                                            
-                                            Text("$\(ticker.1)")
-                                                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                                .foregroundColor(.binanceTextPrimary)
-                                            
-                                            Text(ticker.2)
-                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                                .foregroundColor(ticker.3 ? .binanceGreen : .binanceRed)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(ticker.3 ? Color.binanceGreenBg : Color.binanceRedBg)
-                                                .cornerRadius(4)
-                                        }
-                                        .padding(10)
-                                        .frame(width: 118)
-                                        .background(Color.binanceCard)
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.binanceBorder, lineWidth: 1)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        .offset(y: hasLanded ? 0 : 30)
-                        .opacity(hasLanded ? 1 : 0)
-                        
-                        // MARK: - 5. Live Confirmed Signals (Binance Futures Alert Card)
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("OSTATNIE SYGNAŁY AI RADARU")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceTextSecondary)
-                            
-                            SignalCardView(
-                                symbol: "BTCUSDT",
-                                direction: "LONG / KUPUJ",
-                                isLong: true,
-                                confidence: "93%",
-                                catalyst: "SEC FORM 4 INSIDER",
-                                entry: "94,200.00",
-                                tp: "97,500.00",
-                                sl: "92,800.00",
-                                rationale: "MicroStrategy potwierdza zakup 51,780 BTC. Wolumen instytucjonalny przebija opór.",
-                                copiedToken: $copiedToken
+                        // Multiplier Pill (1.00x)
+                        Text(selectedTimeframe.multiplier)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(Color(hex: "#848E9C"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(pillBg)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(borderDark, lineWidth: 1)
                             )
-                            
-                            SignalCardView(
-                                symbol: "XAUUSD",
-                                direction: "LONG / KUPUJ",
-                                isLong: true,
-                                confidence: "89%",
-                                catalyst: "BLOOMBERG DEPESZA",
-                                entry: "2,682.00",
-                                tp: "2,710.00",
-                                sl: "2,668.00",
-                                rationale: "Popyt na bezpieczną przystań po danych o inflacji w USA. Dolar w odwrocie.",
-                                copiedToken: $copiedToken
-                            )
-                        }
-                        .offset(y: hasLanded ? 0 : 40)
-                        .opacity(hasLanded ? 1 : 0)
+                        
+                        Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
-                    .padding(.bottom, 90) // clearance for bottom navigation
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
                 }
-            }
-            
-            // MARK: - 6. Bottom Navigation Bar (Binance 5-Tab)
-            HStack {
-                BottomTabItem(icon: "house.fill", title: "Home", isSelected: activeBottomTab == 0) {
-                    activeBottomTab = 0
-                }
-                BottomTabItem(icon: "chart.bar.xaxis", title: "Rynki", isSelected: activeBottomTab == 1) {
-                    activeBottomTab = 1
-                }
-                BottomTabItem(icon: "bolt.horizontal.fill", title: "Radar", isSelected: activeBottomTab == 2) {
-                    activeBottomTab = 2
-                }
-                BottomTabItem(icon: "chart.pie.fill", title: "Futures", isSelected: activeBottomTab == 3) {
-                    activeBottomTab = 3
-                }
-                BottomTabItem(icon: "wallet.pass.fill", title: "Portfel", isSelected: activeBottomTab == 4) {
-                    activeBottomTab = 4
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
-            .background(Color.binanceCard.ignoresSafeArea(edges: .bottom))
-            .overlay(
-                Rectangle()
-                    .fill(Color.binanceBorder)
-                    .frame(height: 1),
-                alignment: .top
-            )
-        }
-        .onAppear {
-            // Trigger 120 FPS Landing Spring
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
-                hasLanded = true
-            }
-        }
-    }
-}
-
-// MARK: - Quick Action Button
-struct QuickActionButton: View {
-    let icon: String
-    let title: String
-    let color: Color
-    
-    var body: some View {
-        Button(action: {
-            HapticsManager.shared.lightImpact()
-        }) {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.binanceSurface)
-                        .frame(height: 48)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 18))
-                        .foregroundColor(color)
-                }
-                
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.binanceTextPrimary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// MARK: - Signal Card View with 1-Tap Copy Buttons
-struct SignalCardView: View {
-    let symbol: String
-    let direction: String
-    let isLong: Bool
-    let confidence: String
-    let catalyst: String
-    let entry: String
-    let tp: String
-    let sl: String
-    let rationale: String
-    @Binding var copiedToken: String?
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Header
-            HStack {
-                Text(symbol)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundColor(.binanceTextPrimary)
-                
-                Text(catalyst)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(.binanceYellow)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.binanceYellow.opacity(0.12))
-                    .cornerRadius(4)
                 
                 Spacer()
                 
-                Text(direction)
-                    .font(.system(size: 11, weight: .black, design: .monospaced))
-                    .foregroundColor(isLong ? .binanceGreen : .binanceRed)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(isLong ? Color.binanceGreenBg : Color.binanceRedBg)
-                    .cornerRadius(4)
-            }
-            
-            // Rationale
-            Text(rationale)
-                .font(.system(size: 12))
-                .foregroundColor(.binanceTextSecondary)
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.binanceSurface)
-                .cornerRadius(8)
-            
-            // TP / SL 1-Tap Copy Grid
-            HStack(spacing: 8) {
-                // TP Button
-                Button(action: {
-                    UIPasteboard.general.string = tp
-                    copiedToken = "tp-\(symbol)"
-                    HapticsManager.shared.lightImpact()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        if copiedToken == "tp-\(symbol)" { copiedToken = nil }
-                    }
-                }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("TAKE PROFIT (TP)")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceGreen)
-                            Text("$\(tp)")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceTextPrimary)
+                // MARK: - 3. Neon Green Glowing Chart Line with Gradient Fill
+                GeometryReader { chartProxy in
+                    let w = chartProxy.size.width
+                    let h = chartProxy.size.height
+                    let points = currentPoints
+                    let lastY = h * (1.0 - (points.last ?? 0.5))
+                    let lastX = w
+                    
+                    ZStack {
+                        // Ambient Radiant Glow Underneath Line
+                        LiveDeskChartFill(points: points)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        neonGreen.opacity(0.22),
+                                        neonGreen.opacity(0.06),
+                                        Color.clear
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                        
+                        // Main Neon Green Stroke Line
+                        LiveDeskChartPath(points: points)
+                            .stroke(
+                                neonGreen,
+                                style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
+                            )
+                            .shadow(color: neonGreen.opacity(0.7), radius: 6, x: 0, y: 0)
+                        
+                        // Glowing Tip Dot on Right Edge
+                        ZStack {
+                            Circle()
+                                .fill(neonGreen.opacity(0.35))
+                                .frame(width: 14, height: 14)
+                                .scaleEffect(livePulse ? 1.4 : 1.0)
+                            
+                            Circle()
+                                .fill(neonGreen)
+                                .frame(width: 7, height: 7)
                         }
-                        Spacer()
-                        Image(systemName: copiedToken == "tp-\(symbol)" ? "checkmark" : "doc.on.doc.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(.binanceGreen)
+                        .position(x: lastX, y: lastY)
+                        .shadow(color: neonGreen, radius: 8)
                     }
-                    .padding(8)
-                    .background(Color.binanceSurface)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.binanceGreen.opacity(0.3), lineWidth: 1)
-                    )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .frame(height: 140)
+                .padding(.bottom, 24)
                 
-                // SL Button
-                Button(action: {
-                    UIPasteboard.general.string = sl
-                    copiedToken = "sl-\(symbol)"
-                    HapticsManager.shared.lightImpact()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        if copiedToken == "sl-\(symbol)" { copiedToken = nil }
-                    }
-                }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("STOP LOSS (SL)")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceRed)
-                            Text("$\(sl)")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(.binanceTextPrimary)
+                // MARK: - 4. Bottom Timeframe Selector: LIVE, 1H, 4H, 1D, 1W, ALL
+                HStack(spacing: 8) {
+                    ForEach(LiveDeskTimeframe.allCases) { tf in
+                        Button(action: {
+                            HapticsManager.shared.lightImpact()
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                selectedTimeframe = tf
+                                currentPoints = tf.curvePoints
+                            }
+                        }) {
+                            HStack(spacing: 5) {
+                                if tf == .live {
+                                    Circle()
+                                        .fill(selectedTimeframe == tf ? Color.black : neonGreen)
+                                        .frame(width: 5, height: 5)
+                                }
+                                
+                                Text(tf.rawValue)
+                                    .font(.system(size: 13, weight: selectedTimeframe == tf ? .heavy : .semibold))
+                            }
+                            .foregroundColor(selectedTimeframe == tf ? Color.black : Color(hex: "#7D8693"))
+                            .padding(.horizontal, tf == .live ? 16 : 12)
+                            .frame(height: 34)
+                            .background(
+                                ZStack {
+                                    if selectedTimeframe == tf {
+                                        Capsule()
+                                            .fill(neonGreen)
+                                            .shadow(color: neonGreen.opacity(0.6), radius: 8, x: 0, y: 2)
+                                    }
+                                }
+                            )
                         }
-                        Spacer()
-                        Image(systemName: copiedToken == "sl-\(symbol)" ? "checkmark" : "doc.on.doc.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(.binanceRed)
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        if tf != LiveDeskTimeframe.allCases.last {
+                            Spacer()
+                        }
                     }
-                    .padding(8)
-                    .background(Color.binanceSurface)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.binanceRed.opacity(0.3), lineWidth: 1)
-                    )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.bottom, 48)
             }
         }
-        .padding(14)
-        .background(Color.binanceCard)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.binanceBorder, lineWidth: 1)
-        )
+        .onAppear {
+            // Subtle pulse loop for live indicator
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                livePulse = true
+            }
+        }
+        .sheet(isPresented: $isSharing) {
+            ShareSheet(activityItems: ["TradingPL Live Desk: \(selectedTimeframe.earnings) \(selectedTimeframe.changeText)"])
+        }
     }
 }
 
-// MARK: - Bottom Tab Item
-struct BottomTabItem: View {
-    let icon: String
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
+// MARK: - Bezier Curved Chart Line Shape
+struct LiveDeskChartPath: Shape {
+    var points: [CGFloat]
     
-    var body: some View {
-        Button(action: {
-            HapticsManager.shared.lightImpact()
-            action()
-        }) {
-            VStack(spacing: 3) {
-                Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundColor(isSelected ? .binanceYellow : .binanceTextSecondary)
-                
-                Text(title)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
-                    .foregroundColor(isSelected ? .binanceYellow : .binanceTextSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
+    var animatableData: [CGFloat] {
+        get { points }
+        set { points = newValue }
     }
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard points.count > 1 else { return path }
+        
+        let stepX = rect.width / CGFloat(points.count - 1)
+        let firstY = rect.height * (1.0 - points[0])
+        path.move(to: CGPoint(x: 0, y: firstY))
+        
+        for i in 1..<points.count {
+            let p0 = CGPoint(x: CGFloat(i - 1) * stepX, y: rect.height * (1.0 - points[i - 1]))
+            let p1 = CGPoint(x: CGFloat(i) * stepX, y: rect.height * (1.0 - points[i]))
+            let midX = (p0.x + p1.x) / 2
+            
+            path.addCurve(
+                to: p1,
+                control1: CGPoint(x: midX, y: p0.y),
+                control2: CGPoint(x: midX, y: p1.y)
+            )
+        }
+        return path
+    }
+}
+
+// MARK: - Chart Radiant Gradient Fill
+struct LiveDeskChartFill: Shape {
+    var points: [CGFloat]
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard points.count > 1 else { return path }
+        
+        let stepX = rect.width / CGFloat(points.count - 1)
+        let firstY = rect.height * (1.0 - points[0])
+        
+        path.move(to: CGPoint(x: 0, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: firstY))
+        
+        for i in 1..<points.count {
+            let p0 = CGPoint(x: CGFloat(i - 1) * stepX, y: rect.height * (1.0 - points[i - 1]))
+            let p1 = CGPoint(x: CGFloat(i) * stepX, y: rect.height * (1.0 - points[i]))
+            let midX = (p0.x + p1.x) / 2
+            
+            path.addCurve(
+                to: p1,
+                control1: CGPoint(x: midX, y: p0.y),
+                control2: CGPoint(x: midX, y: p1.y)
+            )
+        }
+        
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Native iOS Share Sheet Wrapper
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
